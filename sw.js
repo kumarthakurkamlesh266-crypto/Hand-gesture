@@ -1,35 +1,37 @@
-// Service worker: caches the app shell so it opens offline after the first visit.
-const VERSION = 'aether-v1';
+// Service worker for AetherHands 3D.
+// Install never fails because of one missing file: each asset is cached on its own.
+const VERSION = 'aether-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil((async () => {
+    const cache = await caches.open(VERSION);
+    await Promise.all(SHELL.map((url) => cache.add(url).catch((err) => console.warn('skip', url, err))));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  // Never cache the camera-related or API traffic; cache-first for everything else.
-  e.respondWith(
-    caches.match(e.request).then((hit) => {
-      if (hit) return hit;
-      return fetch(e.request).then((res) => {
-        // Cache same-origin files and CDN scripts (Three.js, MediaPipe) for offline use.
-        if (res && (res.ok || res.type === 'opaque')) {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(e.request, copy));
-        }
-        return res;
-      }).catch(() => caches.match('./index.html'));
-    })
-  );
+  e.respondWith((async () => {
+    const cache = await caches.open(VERSION);
+    const hit = await cache.match(e.request);
+    if (hit) return hit;
+    try {
+      const res = await fetch(e.request);
+      if (res && (res.ok || res.type === 'opaque')) cache.put(e.request, res.clone());
+      return res;
+    } catch (_) {
+      return (await cache.match('./index.html')) || Response.error();
+    }
+  })());
 });
