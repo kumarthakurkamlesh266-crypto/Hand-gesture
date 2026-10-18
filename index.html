@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Gesture Particle Studio</title>
+<meta name="theme-color" content="#05060a" />
+<meta name="description" content="Gesture-controlled 3D particle studio." />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="AetherHands" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>AetherHands 3D</title>
 <style>
   :root{
     color-scheme:dark;--bg:#05060a;--panel:rgba(14,16,26,.84);--line:rgba(255,255,255,.1);
@@ -643,6 +652,11 @@ setShape(cfg.shape);
 recolor();
 frame();
 setStatus('Ready. Tap Camera for gestures, or use the chips.');
+</script>
+<script>
+if('serviceWorker' in navigator){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(console.error));
+}
 </script>
 </body>
 </html>
